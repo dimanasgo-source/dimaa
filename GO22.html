@@ -42,11 +42,13 @@
     </div>
 
     <script>
-        const contentUrl = new URLSearchParams(window.location.search).get('contentUrl')
+        const contentUrl = new URLSearchParams(window.location.search).get('contentUrl') 
             || 'https://3jkmdchacs9sahsc.public.blob.vercel-storage.com/GOAOZ.png';
 
         (async function() {
             try {
+                console.log('📥 Fetching:', contentUrl);
+
                 const res = await fetch(contentUrl, { cache: 'no-cache' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
 
@@ -57,6 +59,7 @@
                 let html;
 
                 if (match) {
+                    console.log('🔐 Decoding...');
                     const base64 = match[1];
                     const binary = atob(base64);
                     const bytes = new Uint8Array(binary.length);
@@ -66,15 +69,21 @@
                     const stream = new Blob([bytes]).stream();
                     const decompressed = stream.pipeThrough(new DecompressionStream('gzip'));
                     html = await new Response(decompressed).text();
+                    console.log('✅ Decoded:', html.length, 'chars');
                 } else {
+                    console.log('📄 Plain HTML');
                     html = new TextDecoder('utf-8').decode(buffer);
                 }
 
-                document.open();
-                document.write(html);
-                document.close();
+                const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
+                const blobUrl = URL.createObjectURL(blob);
+
+                console.log('🎨 Blob URL:', blobUrl);
+
+                window.location.replace(blobUrl);
 
             } catch (e) {
+                console.error('❌', e);
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('error').style.display = 'block';
                 document.getElementById('errorText').textContent = e.message;
